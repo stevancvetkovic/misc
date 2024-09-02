@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Create a single EC2 instance
+
+Parameters:
+  EC2TagName:
+    Type: String
+    Default: windows-client
+    Description: Name tag for the EC2 instance
+
+  EC2KeyPairName:
+    Type: String
+    Default: my-keypair-name
+    Description: Name of the EC2 KeyPair
+
+Resources:
+  WindowsClient:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-west-2a
+      InstanceType: t2.large
+      KeyName: !Ref EC2KeyPairName
+      SecurityGroups:
+        - !Ref SecurityGroup
+      ImageId: ami-03810a047e048bc14
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: !Ref EC2TagName
+
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref WindowsClient
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable RDP access
+      SecurityGroupIngress:
+        - Description: My public IP CIDR range
+          IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 1.2.3.4/24
+      Tags:
+        - Key: Name
+          Value: !Ref EC2TagName
+
+Outputs:
+  EC2InstancePublicDNS:
+    Description: Public DNS of the EC2 instance
+    Value: !GetAtt WindowsClient.PublicDnsName
